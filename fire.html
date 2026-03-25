@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FIRE達成シミュレーター — hsummer.calc</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --bg: #0c0f0a;
+  --surface: #131710;
+  --surface2: #1a1f16;
+  --surface3: #222819;
+  --border: rgba(255,255,255,0.07);
+  --border-med: rgba(255,255,255,0.12);
+  --text: #e8f0e0;
+  --text-muted: #7a8a6a;
+  --text-faint: #4a5a3a;
+  --fire: #e8843a;
+  --fire-dim: #8a4a1a;
+  --fire-bg: rgba(232,132,58,0.08);
+  --fire-bg2: rgba(232,132,58,0.15);
+  --lime: #a0c840;
+  --lime-dim: #607820;
+  --lime-bg: rgba(160,200,64,0.08);
+  --teal: #40c8a0;
+  --teal-bg: rgba(64,200,160,0.08);
+  --red: #e05050;
+  --red-bg: rgba(224,80,80,0.1);
+  --purple: #a080e0;
+  --purple-bg: rgba(160,128,224,0.08);
+  --radius: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+}
+body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; -webkit-font-smoothing:antialiased; }
+
+.site-header { background:rgba(12,15,10,0.95); border-bottom:1px solid var(--border); padding:0 32px; height:56px; display:flex; align-items:center; justify-content:space-between; }
+.site-logo { font-family:'DM Mono',monospace; font-size:14px; color:var(--text); text-decoration:none; }
+.site-logo span { color:var(--text-faint); }
+.site-back { font-size:12px; color:var(--text-muted); text-decoration:none; display:flex; align-items:center; gap:6px; transition:color .15s; }
+.site-back:hover { color:var(--text); }
+
+/* Hero */
+.page-hero { padding:48px 32px 44px; max-width:900px; margin:0 auto; }
+.hero-eyebrow { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--fire); margin-bottom:12px; }
+.hero-title { font-size:38px; font-weight:700; color:var(--text); line-height:1.1; margin-bottom:10px; }
+.hero-title span { color:var(--fire); }
+.hero-sub { font-size:14px; color:var(--text-muted); line-height:1.7; max-width:500px; }
+
+.container { max-width:900px; margin:0 auto; padding:0 24px 80px; }
+
+.card { background:var(--surface); border-radius:var(--radius-xl); border:1px solid var(--border); padding:24px 28px; margin-bottom:16px; }
+.card-label { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint); margin-bottom:16px; }
+
+/* FIRE type selector */
+.fire-types { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px; }
+.fire-type-btn {
+  padding:12px 10px;
+  border-radius:var(--radius-lg);
+  border:1px solid var(--border);
+  background:var(--surface2);
+  color:var(--text-muted);
+  cursor:pointer;
+  text-align:center;
+  transition:all .15s;
+}
+.fire-type-btn:hover { border-color:var(--fire-dim); }
+.fire-type-btn.active { background:var(--fire-bg2); border-color:var(--fire-dim); color:var(--fire); }
+.fire-type-name { font-size:13px; font-weight:500; margin-bottom:3px; }
+.fire-type-desc { font-size:11px; color:var(--text-faint); line-height:1.4; }
+.fire-type-btn.active .fire-type-desc { color:var(--fire-dim); }
+
+.sl-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px 32px; }
+.sl-row { display:flex; flex-direction:column; gap:7px; }
+.sl-label { font-size:13px; color:var(--text-muted); }
+.sl-val { font-family:'DM Mono',monospace; font-size:20px; font-weight:500; color:var(--fire); }
+
+input[type="range"] { -webkit-appearance:none; width:100%; height:3px; background:var(--surface3); border-radius:2px; outline:none; cursor:pointer; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--fire); border:3px solid var(--surface); box-shadow:0 0 0 1px var(--fire-dim); cursor:pointer; }
+
+/* FIRE number */
+.fire-number-card {
+  background:var(--fire-bg);
+  border:1px solid var(--fire-dim);
+  border-radius:var(--radius-xl);
+  padding:24px 28px;
+  margin-bottom:16px;
+  display:flex;
+  align-items:center;
+  gap:24px;
+  flex-wrap:wrap;
+}
+.fn-main { flex:1; }
+.fn-label { font-size:12px; color:var(--text-faint); font-family:'DM Mono',monospace; letter-spacing:.06em; margin-bottom:6px; }
+.fn-val { font-family:'DM Mono',monospace; font-size:48px; font-weight:700; color:var(--fire); line-height:1; }
+.fn-sub { font-size:13px; color:var(--text-muted); margin-top:6px; }
+.fn-rule { background:var(--surface2); border-radius:var(--radius-lg); padding:14px 18px; }
+.fn-rule-title { font-size:11px; color:var(--text-faint); font-family:'DM Mono',monospace; margin-bottom:6px; }
+.fn-rule-formula { font-family:'DM Mono',monospace; font-size:14px; color:var(--lime); line-height:1.6; }
+
+/* Result hero */
+.result-hero { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border-radius:var(--radius-xl); overflow:hidden; margin-bottom:16px; }
+.rh-cell { background:var(--surface); padding:20px 22px; }
+.rh-label { font-size:11px; color:var(--text-faint); margin-bottom:6px; }
+.rh-val { font-family:'DM Mono',monospace; font-size:26px; font-weight:700; line-height:1; }
+.rh-sub { font-size:12px; color:var(--text-muted); margin-top:5px; }
+
+.stat-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:16px; }
+.stat { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:13px 15px; }
+.stat-label { font-size:11px; color:var(--text-faint); margin-bottom:4px; }
+.stat-num { font-size:15px; font-weight:500; font-family:'DM Mono',monospace; }
+
+/* Savings rate bar */
+.sr-track { height:14px; background:var(--surface3); border-radius:99px; overflow:hidden; margin:10px 0; }
+.sr-fill { height:100%; border-radius:99px; background:var(--fire); transition:width .4s; }
+.sr-labels { display:flex; justify-content:space-between; font-size:11px; color:var(--text-faint); font-family:'DM Mono',monospace; }
+
+.legend { display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--text-muted); margin-bottom:12px; }
+.legend-item { display:flex; align-items:center; gap:5px; }
+.legend-dot { width:10px; height:10px; border-radius:2px; }
+
+.sec { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint); margin:20px 0 10px; display:flex; align-items:center; gap:10px; }
+.sec::after { content:''; flex:1; height:1px; background:var(--border); }
+
+table { width:100%; border-collapse:collapse; font-size:13px; }
+thead th { background:var(--surface2); padding:8px 14px; font-size:11px; font-weight:500; color:var(--text-faint); text-align:left; border-bottom:1px solid var(--border); font-family:'DM Mono',monospace; }
+thead th:not(:first-child) { text-align:right; }
+tbody td { padding:9px 14px; border-bottom:1px solid var(--border); color:var(--text); }
+tbody td:not(:first-child) { text-align:right; font-family:'DM Mono',monospace; font-size:12px; }
+tbody tr:last-child td { border-bottom:none; }
+tbody tr.highlight td { background:var(--fire-bg); color:var(--fire); font-weight:500; }
+
+/* Comparison scenarios */
+.scenario-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+.scenario { background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px 16px; }
+.scenario.best { border-color:var(--lime-dim); background:var(--lime-bg); }
+.sc-label { font-size:11px; color:var(--text-faint); margin-bottom:5px; }
+.sc-years { font-family:'DM Mono',monospace; font-size:22px; font-weight:500; }
+.sc-desc { font-size:11px; color:var(--text-muted); margin-top:3px; }
+.scenario.best .sc-years { color:var(--lime); }
+
+@media(max-width:640px){
+  .site-header{padding:0 16px;}
+  .page-hero{padding:32px 16px 28px;}
+  .container{padding:0 12px 60px;}
+  .card{padding:18px 16px;}
+  .fire-types{grid-template-columns:1fr;}
+  .sl-grid{grid-template-columns:1fr;}
+  .result-hero{grid-template-columns:1fr;}
+  .stat-grid{grid-template-columns:repeat(2,1fr);}
+  .scenario-grid{grid-template-columns:1fr;}
+  .fn-val{font-size:36px;}
+  .hero-title{font-size:28px;}
+  .fire-number-card{flex-direction:column;}
+}
+</style>
+</head>
+<body>
+
+<div class="site-header">
+  <a class="site-logo" href="index.html">hsummer<span>.calc</span></a>
+  <a class="site-back" href="index.html">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    ツール一覧へ
+  </a>
+</div>
+
+<div class="page-hero">
+  <div class="hero-eyebrow">Financial Independence, Retire Early</div>
+  <div class="hero-title"><span>FIRE</span>達成<br>シミュレーター</div>
+  <div class="hero-sub">経済的自立・早期退職に必要な資産額と達成年数を計算。4%ルール（Trinity Study）をベースに複数シナリオを比較します。</div>
+</div>
+
+<div class="container">
+
+  <div class="card">
+    <div class="card-label">FIREタイプを選択</div>
+    <div class="fire-types">
+      <div class="fire-type-btn active" id="ft-lean" onclick="setFIREType('lean')">
+        <div class="fire-type-name">Lean FIRE</div>
+        <div class="fire-type-desc">最低限の生活費で<br>早期FIREを目指す</div>
+      </div>
+      <div class="fire-type-btn" id="ft-normal" onclick="setFIREType('normal')">
+        <div class="fire-type-name">FIRE</div>
+        <div class="fire-type-desc">標準的な生活水準を<br>維持しながらFIRE</div>
+      </div>
+      <div class="fire-type-btn" id="ft-fat" onclick="setFIREType('fat')">
+        <div class="fire-type-name">Fat FIRE</div>
+        <div class="fire-type-desc">余裕ある生活水準で<br>FIREを達成する</div>
+      </div>
+    </div>
+
+    <div class="sl-grid">
+      <div class="sl-row">
+        <div class="sl-label">現在の年齢</div>
+        <input type="range" min="20" max="55" step="1" value="30" id="age" />
+        <div class="sl-val" id="age-out">30歳</div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-label">現在の資産（貯蓄・投資）</div>
+        <input type="range" min="0" max="50000000" step="500000" value="3000000" id="current" />
+        <div class="sl-val" id="current-out">300万円</div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-label">年間手取り収入</div>
+        <input type="range" min="2000000" max="20000000" step="100000" value="7000000" id="income" />
+        <div class="sl-val" id="income-out">700万円</div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-label">FIRE後の年間生活費</div>
+        <input type="range" min="1200000" max="10000000" step="100000" value="3600000" id="fire-expense" />
+        <div class="sl-val" id="fire-expense-out">360万円</div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-label">現在の年間生活費</div>
+        <input type="range" min="1200000" max="10000000" step="100000" value="4800000" id="current-expense" />
+        <div class="sl-val" id="current-expense-out">480万円</div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-label">想定運用利回り（年率）</div>
+        <input type="range" min="1" max="12" step="0.5" value="5" id="rate" />
+        <div class="sl-val" id="rate-out">5.0%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIRE Number -->
+  <div class="fire-number-card">
+    <div class="fn-main">
+      <div class="fn-label">FIRE NUMBER（必要資産額）</div>
+      <div class="fn-val" id="fn-val">−</div>
+      <div class="fn-sub" id="fn-sub">年間生活費 × 25倍（4%ルール）</div>
+    </div>
+    <div class="fn-rule">
+      <div class="fn-rule-title">4% RULE</div>
+      <div class="fn-rule-formula">
+        FIRE資産 × 4% = 年間生活費<br>
+        → 資産は理論上 <span style="color:var(--fire);">枯渇しない</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Savings rate -->
+  <div class="card">
+    <div class="card-label">貯蓄率（年収に対する積立率）</div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+      <span style="font-family:'DM Mono',monospace;font-size:32px;font-weight:500;color:var(--fire);" id="sr-val">−</span>
+      <span style="font-size:12px;color:var(--text-muted);" id="sr-desc">−</span>
+    </div>
+    <div class="sr-track"><div class="sr-fill" id="sr-fill" style="width:0%;"></div></div>
+    <div class="sr-labels"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+  </div>
+
+  <!-- Result hero -->
+  <div class="result-hero">
+    <div class="rh-cell">
+      <div class="rh-label">FIRE達成まで</div>
+      <div class="rh-val" id="rh-years" style="color:var(--fire);">−</div>
+      <div class="rh-sub" id="rh-year-sub">−</div>
+    </div>
+    <div class="rh-cell">
+      <div class="rh-label">FIRE達成時の年齢</div>
+      <div class="rh-val" id="rh-age" style="color:var(--lime);">−</div>
+      <div class="rh-sub" id="rh-age-sub">−</div>
+    </div>
+    <div class="rh-cell">
+      <div class="rh-label">年間積立額</div>
+      <div class="rh-val" id="rh-annual-save" style="color:var(--teal);">−</div>
+      <div class="rh-sub" id="rh-save-sub">−</div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stat-grid">
+    <div class="stat"><div class="stat-label">FIRE Number</div><div class="stat-num" id="s-fire-num" style="color:var(--fire);">−</div></div>
+    <div class="stat"><div class="stat-label">達成時の運用益</div><div class="stat-num" id="s-gain" style="color:var(--lime);">−</div></div>
+    <div class="stat"><div class="stat-label">総積立元本</div><div class="stat-num" id="s-total-in" style="color:var(--text-muted);">−</div></div>
+    <div class="stat"><div class="stat-label">月の積立額</div><div class="stat-num" id="s-monthly" style="color:var(--teal);">−</div></div>
+  </div>
+
+  <!-- Scenario comparison -->
+  <div class="sec">シナリオ比較（生活費別）</div>
+  <div class="scenario-grid" id="scenario-grid"></div>
+
+  <!-- Chart -->
+  <div class="card">
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot" style="background:var(--fire);"></span>資産推移</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--surface3);"></span>元本累計</span>
+      <span class="legend-item"><span class="legend-dot" style="width:16px;height:2px;border-top:2px dashed var(--lime);border-radius:0;"></span>FIRE Number</span>
+    </div>
+    <div style="position:relative;width:100%;height:280px;">
+      <canvas id="chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="sec">年次資産推移</div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table>
+      <thead><tr>
+        <th>年次</th><th>年齢</th><th>元本累計</th><th>資産残高</th><th>運用益</th><th>達成率</th>
+      </tr></thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+let fireType = 'lean';
+let chart;
+
+const FIRE_TYPES = {
+  lean: { name:'Lean FIRE', multiplier:0.8 },
+  normal: { name:'FIRE', multiplier:1.0 },
+  fat: { name:'Fat FIRE', multiplier:1.5 },
+};
+
+function setFIREType(t) {
+  fireType = t;
+  Object.keys(FIRE_TYPES).forEach(k => {
+    document.getElementById('ft-' + k).classList.toggle('active', k===t);
+  });
+  calc();
+}
+
+function fmt(v) {
+  v = Math.round(v);
+  if (v >= 100000000) return (v/100000000).toFixed(1) + '億円';
+  if (v >= 10000) return Math.round(v/10000).toLocaleString() + '万円';
+  return v.toLocaleString() + '円';
+}
+
+function yearsToFIRE(current, annualSave, r, fireNum) {
+  let bal = current;
+  const rm = r / 12;
+  const mSave = annualSave / 12;
+  for (let y = 0; y <= 60; y++) {
+    if (bal >= fireNum) return y;
+    for (let m = 0; m < 12; m++) bal = bal * (1 + rm) + mSave;
+  }
+  return null;
+}
+
+function calc() {
+  const age = parseInt(document.getElementById('age').value);
+  const current = parseInt(document.getElementById('current').value);
+  const income = parseInt(document.getElementById('income').value);
+  const fireExpense = parseInt(document.getElementById('fire-expense').value);
+  const currentExpense = parseInt(document.getElementById('current-expense').value);
+  const r = parseFloat(document.getElementById('rate').value) / 100;
+
+  const mult = FIRE_TYPES[fireType].multiplier;
+  const adjustedExpense = fireExpense * mult;
+
+  document.getElementById('age-out').textContent = age + '歳';
+  document.getElementById('current-out').textContent = fmt(current);
+  document.getElementById('income-out').textContent = fmt(income);
+  document.getElementById('fire-expense-out').textContent = fmt(fireExpense) + '/年';
+  document.getElementById('current-expense-out').textContent = fmt(currentExpense) + '/年';
+  document.getElementById('rate-out').textContent = (r*100).toFixed(1) + '%';
+
+  const fireNum = adjustedExpense * 25;
+  document.getElementById('fn-val').textContent = fmt(fireNum);
+  document.getElementById('fn-sub').textContent = `年間生活費 ${fmt(adjustedExpense)} × 25倍（4%ルール）`;
+  document.getElementById('s-fire-num').textContent = fmt(fireNum);
+
+  const annualSave = income - currentExpense;
+  const savingsRate = income > 0 ? Math.max(0, annualSave / income * 100) : 0;
+  document.getElementById('sr-val').textContent = savingsRate.toFixed(1) + '%';
+  document.getElementById('sr-fill').style.width = Math.min(100, savingsRate).toFixed(1) + '%';
+  let srDesc = savingsRate >= 50 ? '素晴らしい貯蓄率です。FIRE達成が現実的な目標です。'
+             : savingsRate >= 30 ? 'FIREに向けた十分な貯蓄率です。'
+             : savingsRate >= 15 ? '貯蓄率を高めることでFIREが近づきます。'
+             : '支出を見直し、貯蓄率を高めましょう。';
+  document.getElementById('sr-desc').textContent = srDesc;
+
+  const years = yearsToFIRE(current, annualSave, r, fireNum);
+
+  if (annualSave <= 0) {
+    document.getElementById('rh-years').textContent = '達成不可';
+    document.getElementById('rh-year-sub').textContent = '収入 < 支出';
+    document.getElementById('rh-age').textContent = '−';
+    document.getElementById('rh-age-sub').textContent = '支出を減らしてください';
+    document.getElementById('rh-annual-save').textContent = '−';
+    return;
+  }
+
+  if (years === null) {
+    document.getElementById('rh-years').textContent = '60年超';
+    document.getElementById('rh-year-sub').textContent = '利回りか貯蓄額を増やしてください';
+  } else {
+    document.getElementById('rh-years').textContent = years + '年';
+    document.getElementById('rh-year-sub').textContent = new Date().getFullYear() + years + '年に達成';
+    document.getElementById('rh-age').textContent = (age + years) + '歳';
+    document.getElementById('rh-age-sub').textContent = '残り' + years + '年で経済的自由へ';
+  }
+  document.getElementById('rh-annual-save').textContent = fmt(annualSave);
+  document.getElementById('rh-save-sub').textContent = '月' + fmt(annualSave/12) + 'の積立';
+  document.getElementById('s-monthly').textContent = fmt(annualSave/12);
+  document.getElementById('s-total-in').textContent = years ? fmt(current + annualSave * years) : '−';
+
+  // Final asset calc
+  let finalBal = current;
+  const rm = r / 12, mSave = annualSave / 12;
+  const displayYears = Math.min(years !== null ? years + 3 : 40, 60);
+  for (let m = 0; m < displayYears * 12; m++) finalBal = finalBal * (1 + rm) + mSave;
+  const totalIn = years ? current + annualSave * Math.min(years, displayYears) : 0;
+  const gain = years ? finalBal - totalIn : 0;
+  document.getElementById('s-gain').textContent = fmt(Math.max(0, gain));
+
+  // Scenario grid
+  const scenarios = [
+    { label:'節約プラン', expense: fireExpense * 0.7, desc:'生活費を30%削減' },
+    { label:'現在のプラン', expense: fireExpense, desc:'現在の想定' },
+    { label:'ゆとりプラン', expense: fireExpense * 1.5, desc:'生活費を50%増' },
+  ];
+  document.getElementById('scenario-grid').innerHTML = scenarios.map((sc, i) => {
+    const fn2 = sc.expense * 25;
+    const y2 = yearsToFIRE(current, annualSave, r, fn2);
+    const isBest = y2 !== null && scenarios.every((s2, j) => {
+      if (j === i) return true;
+      const y3 = yearsToFIRE(current, annualSave, r, s2.expense * 25);
+      return y3 === null || y2 <= y3;
+    });
+    return `<div class="scenario ${isBest?'best':''}">
+      <div class="sc-label">${sc.label}</div>
+      <div class="sc-years">${y2 !== null ? y2 + '年' : '60年超'}</div>
+      <div class="sc-desc">${sc.desc} (${fmt(sc.expense)}/年)</div>
+    </div>`;
+  }).join('');
+
+  // Chart
+  const labels = [], assetData = [], principalData = [], fireNumLine = [];
+  let bal = current, cumIn = current;
+  for (let y = 0; y <= displayYears; y++) {
+    labels.push(y + '年\n' + (age+y) + '歳');
+    assetData.push(Math.round(bal));
+    principalData.push(Math.round(cumIn));
+    fireNumLine.push(fireNum);
+    for (let m = 0; m < 12; m++) { bal = bal * (1+rm) + mSave; }
+    cumIn += annualSave;
+  }
+
+  if (chart) chart.destroy();
+  chart = new Chart(document.getElementById('chart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'資産残高', data:assetData, borderColor:'#e8843a', backgroundColor:'rgba(232,132,58,0.08)', fill:true, tension:0.3, pointRadius:0, borderWidth:2.5 },
+        { label:'元本累計', data:principalData, borderColor:'#222819', backgroundColor:'rgba(34,40,25,0.5)', fill:true, tension:0, pointRadius:0, borderWidth:1 },
+        { label:'FIRE Number', data:fireNumLine, borderColor:'#a0c840', borderDash:[5,3], fill:false, pointRadius:0, borderWidth:2 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(19,23,16,0.95)',
+          borderColor:'rgba(255,255,255,0.1)',
+          borderWidth:1,
+          titleColor:'#7a8a6a',
+          bodyColor:'#e8f0e0',
+          callbacks:{label:ctx=>' '+ctx.dataset.label+': '+fmt(ctx.parsed.y)}
+        }
+      },
+      scales:{
+        x:{ticks:{autoSkip:true,maxTicksLimit:10,color:'#4a5a3a',font:{size:11}},grid:{color:'rgba(255,255,255,0.04)'}},
+        y:{ticks:{callback:v=>{if(v>=100000000)return(v/100000000).toFixed(1)+'億';if(v>=10000)return Math.round(v/10000)+'万';return v;},color:'#4a5a3a',font:{size:11}},grid:{color:'rgba(255,255,255,0.04)'}}
+      }
+    }
+  });
+
+  // Table
+  let bal2 = current, cumIn2 = current;
+  const milestones = [1,2,3,5,7,10,15,20,25,30].filter(y=>y<=displayYears);
+  if (years && !milestones.includes(years)) { milestones.push(years); milestones.sort((a,b)=>a-b); }
+  document.getElementById('table-body').innerHTML = milestones.map(y => {
+    let b = current, ci = current;
+    for (let yi=0;yi<y;yi++){ for(let m=0;m<12;m++) b=b*(1+rm)+mSave; ci+=annualSave; }
+    const gain2 = Math.max(0, b - ci);
+    const pct = Math.min(100, b/fireNum*100).toFixed(1);
+    const isFire = y === years;
+    return `<tr class="${isFire?'highlight':''}">
+      <td>${y}年目${isFire?' 🔥 FIRE':''}  </td>
+      <td>${age+y}歳</td>
+      <td style="color:var(--text-muted);">${fmt(ci)}</td>
+      <td>${fmt(Math.round(b))}</td>
+      <td style="color:var(--lime);">${fmt(gain2)}</td>
+      <td style="color:${parseFloat(pct)>=100?'var(--fire)':'var(--text-muted)'};">${pct}%</td>
+    </tr>`;
+  }).join('');
+}
+
+['age','current','income','fire-expense','current-expense','rate'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', calc);
+});
+calc();
+</script>
+</body>
+</html>

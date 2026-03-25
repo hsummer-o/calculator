@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>老後資金シミュレーター — hsummer.calc</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --bg: #f0f4f0;
+  --surface: #fff;
+  --surface2: #e8ede8;
+  --surface3: #dde5dd;
+  --border: rgba(0,0,0,0.07);
+  --border-med: rgba(0,0,0,0.12);
+  --text: #1a1e1a;
+  --text-muted: #636b63;
+  --text-faint: #9aa09a;
+  --green: #2a6b3a;
+  --green-50: #e4f2e8;
+  --green-dim: #1d4f2a;
+  --green-bg: rgba(42,107,58,0.08);
+  --teal: #1d7a62;
+  --teal-bg: rgba(29,122,98,0.08);
+  --red: #c04040;
+  --red-bg: rgba(192,64,64,0.1);
+  --amber: #a06800;
+  --amber-bg: rgba(160,104,0,0.08);
+  --purple: #5a42a8;
+  --purple-bg: rgba(90,66,168,0.08);
+  --radius: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+}
+body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; -webkit-font-smoothing:antialiased; }
+
+.site-header { background:var(--green-dim); padding:0 32px; height:56px; display:flex; align-items:center; justify-content:space-between; }
+.site-logo { font-family:'DM Mono',monospace; font-size:14px; color:#fff; text-decoration:none; }
+.site-logo span { color:rgba(255,255,255,0.3); }
+.site-back { font-size:12px; color:rgba(255,255,255,0.45); text-decoration:none; display:flex; align-items:center; gap:6px; transition:color .15s; }
+.site-back:hover { color:#fff; }
+
+.page-hero { background:var(--green-dim); padding:44px 32px 48px; }
+.page-hero-inner { max-width:900px; margin:0 auto; }
+.hero-eyebrow { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,0.35); margin-bottom:10px; }
+.hero-title { font-size:34px; font-weight:700; color:#fff; line-height:1.15; margin-bottom:8px; }
+.hero-sub { font-size:14px; color:rgba(255,255,255,0.5); line-height:1.7; }
+
+.container { max-width:900px; margin:0 auto; padding:28px 24px 80px; }
+.card { background:var(--surface); border-radius:var(--radius-xl); border:1px solid var(--border); padding:24px 28px; margin-bottom:16px; }
+.card-label { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint); margin-bottom:16px; }
+
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.inner-card { background:var(--surface2); border-radius:var(--radius-lg); padding:18px 20px; }
+.inner-label { font-size:12px; font-weight:500; color:var(--text-muted); margin-bottom:12px; display:flex; align-items:center; gap:6px; }
+.inner-label span { width:6px; height:6px; border-radius:50%; display:inline-block; }
+
+.sl-row { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+.sl-row:last-child { margin-bottom:0; }
+.sl-label { font-size:12px; color:var(--text-muted); }
+.sl-val { font-family:'DM Mono',monospace; font-size:18px; font-weight:500; }
+
+input[type="range"] { -webkit-appearance:none; width:100%; height:3px; background:var(--surface3); border-radius:2px; outline:none; cursor:pointer; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:var(--green); border:3px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.2); cursor:pointer; }
+
+/* Result banner */
+.result-banner { border-radius:var(--radius-xl); padding:24px 28px; margin-bottom:16px; }
+.result-banner.surplus { background:var(--green-bg); border:1px solid rgba(42,107,58,0.2); }
+.result-banner.shortage { background:var(--red-bg); border:1px solid rgba(192,64,64,0.2); }
+.rb-top { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.rb-label { font-size:12px; margin-bottom:6px; }
+.rb-label.surplus { color:var(--green); }
+.rb-label.shortage { color:var(--red); }
+.rb-amount { font-family:'DM Mono',monospace; font-size:40px; font-weight:700; line-height:1; }
+.rb-amount.surplus { color:var(--green); }
+.rb-amount.shortage { color:var(--red); }
+.rb-sub { font-size:13px; color:var(--text-muted); margin-top:6px; }
+.rb-right { text-align:right; }
+.rb-right .rb-label { text-align:right; }
+
+.stat-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:16px; }
+.stat { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:13px 15px; }
+.stat-label { font-size:11px; color:var(--text-faint); margin-bottom:4px; }
+.stat-num { font-size:15px; font-weight:500; font-family:'DM Mono',monospace; }
+
+/* Breakdown bars */
+.bkd-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.bkd-label { font-size:12px; color:var(--text-muted); width:100px; flex-shrink:0; text-align:right; }
+.bkd-track { flex:1; height:10px; background:var(--surface2); border-radius:99px; overflow:hidden; }
+.bkd-fill { height:100%; border-radius:99px; transition:width .4s; }
+.bkd-amount { font-family:'DM Mono',monospace; font-size:12px; color:var(--text); width:80px; text-align:right; flex-shrink:0; }
+
+.legend { display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--text-muted); margin-bottom:12px; }
+.legend-item { display:flex; align-items:center; gap:5px; }
+.legend-dot { width:10px; height:10px; border-radius:2px; }
+
+.sec { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint); margin:20px 0 10px; display:flex; align-items:center; gap:10px; }
+.sec::after { content:''; flex:1; height:1px; background:var(--border-med); }
+
+/* Tips */
+.tip-box { border-radius:var(--radius-lg); padding:14px 18px; margin-bottom:10px; border-left:3px solid; }
+.tip-box.green { background:var(--green-bg); border-color:var(--green); }
+.tip-box.amber { background:var(--amber-bg); border-color:var(--amber); }
+.tip-box.purple { background:var(--purple-bg); border-color:var(--purple); }
+.tip-title { font-size:13px; font-weight:500; margin-bottom:3px; }
+.tip-box.green .tip-title { color:var(--green); }
+.tip-box.amber .tip-title { color:var(--amber); }
+.tip-box.purple .tip-title { color:var(--purple); }
+.tip-desc { font-size:12px; color:var(--text-muted); line-height:1.7; }
+
+@media(max-width:640px){
+  .site-header{padding:0 16px;}
+  .page-hero{padding:32px 16px 28px;}
+  .container{padding:20px 12px 60px;}
+  .card{padding:18px 16px;}
+  .two-col{grid-template-columns:1fr;}
+  .stat-grid{grid-template-columns:repeat(2,1fr);}
+  .hero-title{font-size:26px;}
+  .rb-amount{font-size:28px;}
+}
+</style>
+</head>
+<body>
+
+<div class="site-header">
+  <a class="site-logo" href="index.html">hsummer<span>.calc</span></a>
+  <a class="site-back" href="index.html">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    ツール一覧へ
+  </a>
+</div>
+
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <div class="hero-eyebrow">Retirement Planning</div>
+    <div class="hero-title">老後資金<br>シミュレーター</div>
+    <div class="hero-sub">退職後に必要な資金を計算。年金・貯蓄・生活費から不足額を把握し、今から準備できる金額を確認。</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="card">
+    <div class="card-label">基本情報・現状</div>
+    <div class="two-col">
+      <div class="inner-card">
+        <div class="inner-label"><span style="background:var(--green);"></span>現在の状況</div>
+        <div class="sl-row">
+          <div class="sl-label">現在の年齢</div>
+          <input type="range" min="20" max="65" step="1" value="35" id="age" />
+          <div class="sl-val" id="age-out" style="color:var(--green);">35歳</div>
+        </div>
+        <div class="sl-row">
+          <div class="sl-label">退職予定年齢</div>
+          <input type="range" min="50" max="70" step="1" value="65" id="retire-age" />
+          <div class="sl-val" id="retire-age-out" style="color:var(--green);">65歳</div>
+        </div>
+        <div class="sl-row">
+          <div class="sl-label">現在の貯蓄額</div>
+          <input type="range" min="0" max="50000000" step="500000" value="5000000" id="current-savings" />
+          <div class="sl-val" id="current-savings-out" style="color:var(--green);">500万円</div>
+        </div>
+        <div class="sl-row">
+          <div class="sl-label">月の積立額</div>
+          <input type="range" min="0" max="300000" step="5000" value="50000" id="monthly-save" />
+          <div class="sl-val" id="monthly-save-out" style="color:var(--green);">5万円</div>
+        </div>
+        <div class="sl-row">
+          <div class="sl-label">運用利回り（年率）</div>
+          <input type="range" min="0" max="8" step="0.5" value="3" id="invest-rate" />
+          <div class="sl-val" id="invest-rate-out" style="color:var(--green);">3.0%</div>
+        </div>
+      </div>
+      <div class="inner-card">
+        <div class="inner-label"><span style="background:var(--teal);"></span>老後の見通し</div>
+        <div class="sl-row">
+          <div class="sl-label">想定寿命（老後の期間）</div>
+          <input type="range" min="75" max="100" step="1" value="90" id="life-exp" />
+          <div class="sl-val" id="life-exp-out" style="color:var(--teal);">90歳（25年間）</div>
+        </div>
+        <div class="sl-row">
+          <div class="sl-label">老後の月生活費</div>
+          <input type="range" min="100000" max="600000" step="10000" value="250000" id="monthly-expense" />
+          <div class="sl-val" id="monthly-expense-out" style="color:var(--teal);">25万円</div>
+        </div>
+        <div class="sl-row">
+          <div class="sl-label">月の年金受給額（見込み）</div>
+          <input type="range" min="50000" max="350000" step="5000" value="150000" id="pension" />
+          <div class="sl-val" id="pension-out" style="color:var(--teal);">15万円</div>
+        </div>
+        <div class="sl-row">
+          <div class="sl-label">退職金（見込み）</div>
+          <input type="range" min="0" max="30000000" step="500000" value="5000000" id="severance" />
+          <div class="sl-val" id="severance-out" style="color:var(--teal);">500万円</div>
+        </div>
+        <div class="sl-row">
+          <div class="sl-label">老後の運用利回り（年率）</div>
+          <input type="range" min="0" max="5" step="0.5" value="1" id="retire-rate" />
+          <div class="sl-val" id="retire-rate-out" style="color:var(--teal);">1.0%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result banner -->
+  <div class="result-banner" id="result-banner">
+    <div class="rb-top">
+      <div>
+        <div class="rb-label" id="rb-label">−</div>
+        <div class="rb-amount" id="rb-amount">−</div>
+        <div class="rb-sub" id="rb-sub">−</div>
+      </div>
+      <div class="rb-right">
+        <div class="rb-label" id="rb-label2">退職時の想定資産</div>
+        <div class="rb-amount" id="rb-asset" style="color:var(--text); font-size:24px;">−</div>
+        <div class="rb-sub" id="rb-asset-sub">−</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stat-grid">
+    <div class="stat"><div class="stat-label">老後の必要総額</div><div class="stat-num" id="s-need" style="color:var(--red);">−</div></div>
+    <div class="stat"><div class="stat-label">年金の総受給額</div><div class="stat-num" id="s-pension-total" style="color:var(--teal);">−</div></div>
+    <div class="stat"><div class="stat-label">退職までの積立総額</div><div class="stat-num" id="s-accum" style="color:var(--green);">−</div></div>
+    <div class="stat"><div class="stat-label">月の不足額</div><div class="stat-num" id="s-monthly-gap" style="color:var(--amber);">−</div></div>
+  </div>
+
+  <!-- Breakdown bars -->
+  <div class="card">
+    <div class="card-label">老後資金の収支内訳</div>
+    <div id="bkd-bars"></div>
+  </div>
+
+  <!-- Chart -->
+  <div class="card">
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot" style="background:var(--green);"></span>資産残高</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#c0d8f0;"></span>年金累計</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#f0997b; opacity:.6;"></span>支出累計</span>
+    </div>
+    <div style="position:relative;width:100%;height:280px;">
+      <canvas id="chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Tips -->
+  <div class="sec">改善アドバイス</div>
+  <div id="tips"></div>
+
+</div>
+
+<script>
+let chart;
+
+function fmt(v) {
+  v = Math.round(v);
+  if (v >= 100000000) return (v/100000000).toFixed(1) + '億円';
+  if (v >= 10000) return Math.round(v/10000).toLocaleString() + '万円';
+  return v.toLocaleString() + '円';
+}
+
+function calcFV(PV, monthly, r, years) {
+  if (r === 0) return PV + monthly * 12 * years;
+  const rm = r / 12;
+  const n = years * 12;
+  return PV * Math.pow(1+rm, n) + monthly * ((Math.pow(1+rm,n)-1)/rm);
+}
+
+function calc() {
+  const age = parseInt(document.getElementById('age').value);
+  const retireAge = parseInt(document.getElementById('retire-age').value);
+  const currentSav = parseInt(document.getElementById('current-savings').value);
+  const monthlySave = parseInt(document.getElementById('monthly-save').value);
+  const investRate = parseFloat(document.getElementById('invest-rate').value) / 100;
+  const lifeExp = parseInt(document.getElementById('life-exp').value);
+  const monthlyExp = parseInt(document.getElementById('monthly-expense').value);
+  const pension = parseInt(document.getElementById('pension').value);
+  const severance = parseInt(document.getElementById('severance').value);
+  const retireRate = parseFloat(document.getElementById('retire-rate').value) / 100;
+
+  const yearsToRetire = Math.max(0, retireAge - age);
+  const retireYears = Math.max(0, lifeExp - retireAge);
+
+  document.getElementById('age-out').textContent = age + '歳';
+  document.getElementById('retire-age-out').textContent = retireAge + '歳';
+  document.getElementById('current-savings-out').textContent = fmt(currentSav);
+  document.getElementById('monthly-save-out').textContent = fmt(monthlySave) + '/月';
+  document.getElementById('invest-rate-out').textContent = (investRate*100).toFixed(1) + '%';
+  document.getElementById('life-exp-out').textContent = lifeExp + '歳（' + retireYears + '年間）';
+  document.getElementById('monthly-expense-out').textContent = fmt(monthlyExp) + '/月';
+  document.getElementById('pension-out').textContent = fmt(pension) + '/月';
+  document.getElementById('severance-out').textContent = fmt(severance);
+  document.getElementById('retire-rate-out').textContent = (retireRate*100).toFixed(1) + '%';
+
+  // 退職時の資産
+  const assetAtRetire = calcFV(currentSav, monthlySave, investRate, yearsToRetire) + severance;
+
+  // 老後必要総額（年金を差し引いた不足分）
+  const monthlyGap = Math.max(0, monthlyExp - pension);
+  const totalNeed = monthlyExp * 12 * retireYears;
+  const totalPension = pension * 12 * retireYears;
+  const totalSelfPay = totalNeed - totalPension;
+
+  // 老後の資産取り崩し計算
+  const surplus = assetAtRetire - totalSelfPay;
+
+  // 退職時に必要な資産（老後の運用込み）
+  const rr = retireRate / 12;
+  const n2 = retireYears * 12;
+  const requiredAtRetire = rr === 0
+    ? monthlyGap * n2
+    : monthlyGap * (1 - Math.pow(1+rr,-n2)) / rr;
+
+  const finalSurplus = assetAtRetire - requiredAtRetire;
+  const isShortage = finalSurplus < 0;
+
+  const banner = document.getElementById('result-banner');
+  banner.className = 'result-banner ' + (isShortage ? 'shortage' : 'surplus');
+  document.getElementById('rb-label').className = 'rb-label ' + (isShortage ? 'shortage' : 'surplus');
+  document.getElementById('rb-label').textContent = isShortage ? '老後資金が不足します' : '老後資金は確保できています';
+  document.getElementById('rb-amount').className = 'rb-amount ' + (isShortage ? 'shortage' : 'surplus');
+  document.getElementById('rb-amount').textContent = (isShortage ? '−' : '+') + fmt(Math.abs(finalSurplus));
+  document.getElementById('rb-sub').textContent = isShortage
+    ? '月' + fmt(monthlyGap) + 'の不足 × ' + retireYears + '年間（運用込み）'
+    : '老後' + retireYears + '年間の生活費を賄えます';
+  document.getElementById('rb-asset').textContent = fmt(assetAtRetire);
+  document.getElementById('rb-asset-sub').textContent = '退職時 ' + retireAge + '歳時点の想定';
+
+  document.getElementById('s-need').textContent = fmt(totalNeed);
+  document.getElementById('s-pension-total').textContent = fmt(totalPension);
+  document.getElementById('s-accum').textContent = fmt(assetAtRetire);
+  document.getElementById('s-monthly-gap').textContent = monthlyGap > 0 ? fmt(monthlyGap) + '/月' : '不足なし';
+
+  // Breakdown bars
+  const maxBar = Math.max(totalNeed, assetAtRetire + totalPension, 1);
+  const bkdItems = [
+    { label: '老後 必要総額', val: totalNeed, color: '#c04040' },
+    { label: '年金 受給総額', val: totalPension, color: '#1d7a62' },
+    { label: '退職時 資産', val: assetAtRetire, color: '#2a6b3a' },
+    { label: '必要 自己資金', val: requiredAtRetire, color: '#a06800' },
+  ];
+  document.getElementById('bkd-bars').innerHTML = bkdItems.map(b => `
+    <div class="bkd-row">
+      <div class="bkd-label">${b.label}</div>
+      <div class="bkd-track"><div class="bkd-fill" style="width:${Math.min(100,(b.val/maxBar*100)).toFixed(1)}%;background:${b.color};"></div></div>
+      <div class="bkd-amount">${fmt(b.val)}</div>
+    </div>`).join('');
+
+  // Chart: asset drawdown after retirement
+  const labels = [], assetData = [], pensionCumData = [], expCumData = [];
+  let bal = assetAtRetire, cumPension = 0, cumExp = 0;
+  for (let y = 0; y <= retireYears; y++) {
+    labels.push(retireAge + y + '歳');
+    assetData.push(Math.round(Math.max(0, bal)));
+    pensionCumData.push(Math.round(cumPension));
+    expCumData.push(Math.round(cumExp));
+    for (let m = 0; m < 12; m++) {
+      const ret = bal * (retireRate / 12);
+      bal += ret + pension - monthlyExp;
+      cumPension += pension;
+      cumExp += monthlyExp;
+    }
+  }
+
+  if (chart) chart.destroy();
+  chart = new Chart(document.getElementById('chart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'資産残高', data:assetData, borderColor:'#2a6b3a', backgroundColor:'rgba(42,107,58,0.08)', fill:true, tension:0.2, pointRadius:0, borderWidth:2.5 },
+        { label:'年金累計', data:pensionCumData, borderColor:'#1d7a62', fill:false, tension:0, pointRadius:0, borderWidth:1.5, borderDash:[4,3] },
+        { label:'支出累計', data:expCumData, borderColor:'#f0997b', fill:false, tension:0, pointRadius:0, borderWidth:1.5 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.dataset.label+': '+fmt(ctx.parsed.y)}}},
+      scales:{
+        x:{ticks:{autoSkip:true,maxTicksLimit:10,font:{size:11}},grid:{color:'rgba(0,0,0,0.04)'}},
+        y:{ticks:{callback:v=>{if(v>=100000000)return(v/100000000).toFixed(1)+'億';if(v>=10000)return Math.round(v/10000)+'万';return v;},font:{size:11}},grid:{color:'rgba(0,0,0,0.04)'}}
+      }
+    }
+  });
+
+  // Tips
+  const tips = [];
+  if (isShortage) {
+    const addMonthly = Math.ceil((-finalSurplus / yearsToRetire / 12) / 5000) * 5000;
+    tips.push({ type:'amber', title:'月の積立を増やす', desc:`月${fmt(addMonthly)}追加積立することで不足分を補えます（利回り${(investRate*100).toFixed(1)}%想定）。` });
+  }
+  if (monthlySave < 50000) tips.push({ type:'green', title:'つみたてNISA・iDeCoを活用する', desc:'非課税枠を使った積立で効率的に資産形成できます。iDeCoは所得控除にもなります。' });
+  if (pension < 150000) tips.push({ type:'purple', title:'年金額を増やす工夫', desc:'国民年金の付加保険料の支払いや、厚生年金加入期間を延ばすことで年金額を増やせます。' });
+  if (retireYears > 25) tips.push({ type:'amber', title:'長寿リスクへの備え', desc:`老後${retireYears}年は長期です。80歳以降も取り崩しに耐えられるよう、保守的な計画を立てましょう。` });
+  tips.push({ type:'green', title:'インフレを考慮した計画を', desc:'物価上昇率を年1〜2%と仮定すると、老後の実質的な生活費は現在より高くなる可能性があります。' });
+
+  document.getElementById('tips').innerHTML = tips.map(t => `
+    <div class="tip-box ${t.type}">
+      <div class="tip-title">${t.title}</div>
+      <div class="tip-desc">${t.desc}</div>
+    </div>`).join('');
+}
+
+['age','retire-age','current-savings','monthly-save','invest-rate','life-exp','monthly-expense','pension','severance','retire-rate'].forEach(id => {
+  document.getElementById(id).addEventListener('input', calc);
+});
+calc();
+</script>
+</body>
+</html>
