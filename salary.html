@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>年収・手取りシミュレーター — hsummer.calc</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f4f2ee; --surface: #fff; --surface2: #edeae4;
+  --border: rgba(0,0,0,0.08); --border-med: rgba(0,0,0,0.13);
+  --text: #1c1a17; --text-muted: #6a6760; --text-faint: #9b9891;
+  --blue: #1a5fa8; --blue-50: #e8f0fb; --blue-dark: #0c447c;
+  --green: #2a6b3a; --amber: #8a5a0a; --red: #c03030; --red-50: #fdeaea;
+  --orange: #b54d1a; --purple: #4f42b0;
+  --radius: 10px; --radius-lg: 16px; --radius-xl: 22px;
+}
+body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; -webkit-font-smoothing:antialiased; }
+header { background:var(--text); padding:0 32px; height:56px; display:flex; align-items:center; justify-content:space-between; }
+header .logo { font-family:'DM Mono',monospace; font-size:14px; color:#fff; }
+header .logo span { color:rgba(255,255,255,0.3); }
+header a { font-size:12px; color:rgba(255,255,255,0.4); text-decoration:none; display:flex; align-items:center; gap:6px; transition:color .15s; }
+header a:hover { color:rgba(255,255,255,0.85); }
+.container { max-width:820px; margin:0 auto; padding:32px 20px 80px; }
+.card { background:var(--surface); border-radius:var(--radius-xl); border:1px solid var(--border); padding:24px 28px; margin-bottom:18px; }
+.card-label { font-size:11px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint); margin-bottom:14px; }
+.salary-display { display:flex; align-items:baseline; gap:8px; margin-bottom:10px; }
+.salary-big { font-size:38px; font-weight:700; font-family:'DM Mono',monospace; line-height:1; }
+.salary-unit { font-size:15px; color:var(--text-muted); }
+input[type="range"] { -webkit-appearance:none; width:100%; height:3px; background:var(--border-med); border-radius:2px; outline:none; cursor:pointer; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--text); border:3px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.25); cursor:pointer; }
+.range-ticks { display:flex; justify-content:space-between; font-size:11px; color:var(--text-faint); font-family:'DM Mono',monospace; margin-top:6px; }
+.controls-row { display:flex; gap:12px; flex-wrap:wrap; margin-top:18px; }
+.ctrl { display:flex; flex-direction:column; gap:5px; }
+.ctrl label { font-size:12px; color:var(--text-muted); }
+.ctrl select { height:34px; border-radius:var(--radius); border:1px solid var(--border-med); background:var(--surface2); color:var(--text); padding:0 10px; font-size:13px; font-family:'Noto Sans JP',sans-serif; outline:none; cursor:pointer; }
+.bonus-bar { height:7px; border-radius:4px; overflow:hidden; display:flex; margin-top:8px; }
+.bonus-txt { font-size:12px; color:var(--text-muted); line-height:1.8; font-family:'DM Mono',monospace; margin-top:6px; }
+.ctrl input[type="number"] { height:34px; border-radius:var(--radius); border:1px solid var(--border-med); background:var(--surface2); color:var(--text); padding:0 10px; font-size:13px; width:80px; text-align:center; outline:none; }
+.summary-hero { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border-radius:var(--radius-xl); overflow:hidden; margin-bottom:18px; }
+.summary-cell { background:var(--surface); padding:18px 20px; }
+.summary-cell-label { font-size:11px; color:var(--text-faint); margin-bottom:5px; }
+.summary-cell-main { font-size:20px; font-weight:700; font-family:'DM Mono',monospace; line-height:1.1; }
+.summary-cell-sub { font-size:12px; color:var(--text-muted); margin-top:3px; }
+.summary-cell-sub b { font-family:'DM Mono',monospace; font-weight:500; }
+.stat-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:18px; }
+.stat { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:13px 15px; }
+.stat-label { font-size:11px; color:var(--text-faint); margin-bottom:4px; }
+.stat-num { font-size:15px; font-weight:500; font-family:'DM Mono',monospace; }
+.legend { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:10px; font-size:12px; color:var(--text-muted); }
+.legend-item { display:flex; align-items:center; gap:4px; }
+.legend-dot { width:10px; height:10px; border-radius:2px; }
+.chart-lbl { font-size:11px; color:var(--text-faint); font-family:'DM Mono',monospace; margin-bottom:3px; }
+.sec { font-size:11px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint); margin:20px 0 10px; display:flex; align-items:center; gap:10px; }
+.sec::after { content:''; flex:1; height:1px; background:var(--border-med); }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { font-size:11px; font-weight:500; color:var(--text-faint); text-align:left; padding:7px 10px; border-bottom:1px solid var(--border); background:var(--surface2); }
+th:not(:first-child) { text-align:right; }
+td { padding:8px 10px; border-bottom:1px solid var(--border); color:var(--text); }
+td:not(:first-child) { text-align:right; font-family:'DM Mono',monospace; font-size:12px; }
+tr:last-child td { border-bottom:none; }
+.total-row td { font-weight:700; border-top:2px solid var(--border-med) !important; }
+.active-bracket td { background:var(--blue-50); color:var(--blue-dark); font-weight:500; }
+.dot-cell { display:flex; align-items:center; gap:7px; }
+.color-dot { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+footer { text-align:center; font-size:11px; color:var(--text-faint); line-height:1.8; padding:0 20px 40px; }
+@media(max-width:600px){ header{padding:0 16px;} .container{padding:20px 12px 50px;} .summary-hero{grid-template-columns:1fr;} .stat-grid{grid-template-columns:repeat(2,1fr);} .salary-big{font-size:28px;} }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">hsummer<span>.calc</span></div>
+  <a href="index.html">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    ツール一覧へ
+  </a>
+</header>
+
+<div class="container">
+  <div class="card">
+    <div class="card-label">年収設定（ボーナス含む・額面）</div>
+    <div class="salary-display">
+      <div class="salary-big" id="big-gross">800</div>
+      <div class="salary-unit">万円</div>
+    </div>
+    <input type="range" min="200" max="3000" step="10" value="800" id="sl" />
+    <div class="range-ticks"><span>200万</span><span>500万</span><span>1,000万</span><span>1,500万</span><span>2,000万</span><span>3,000万</span></div>
+    <div class="controls-row">
+      <div class="ctrl" style="flex:1;min-width:200px;">
+        <label>ボーナス割合（年収のうち）</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="number" id="bonus-pct" min="0" max="60" step="5" value="25" />
+          <span style="font-size:13px;color:var(--text-muted);">%</span>
+          <div style="flex:1;">
+            <div class="bonus-bar" id="bonus-bar"></div>
+            <div class="bonus-txt" id="bonus-txt"></div>
+          </div>
+        </div>
+      </div>
+      <div class="ctrl"><label>ボーナス回数</label>
+        <select id="bonus-times"><option value="1">年1回</option><option value="2" selected>年2回（夏・冬）</option><option value="3">年3回</option></select>
+      </div>
+      <div class="ctrl"><label>扶養家族</label>
+        <select id="deps"><option value="0">なし</option><option value="1">1人</option><option value="2">2人</option><option value="3">3人以上</option></select>
+      </div>
+      <div class="ctrl"><label>年齢</label>
+        <select id="age"><option value="u">40歳未満</option><option value="o">40歳以上</option></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="summary-hero">
+    <div class="summary-cell">
+      <div class="summary-cell-label">月給（額面）</div>
+      <div class="summary-cell-main" id="disp-mg">−</div>
+      <div class="summary-cell-sub">手取り <b id="disp-mn" style="color:var(--blue);">−</b></div>
+    </div>
+    <div class="summary-cell">
+      <div class="summary-cell-label">ボーナス 1回あたり（額面）</div>
+      <div class="summary-cell-main" id="disp-bg" style="color:var(--amber);">−</div>
+      <div class="summary-cell-sub">手取り <b id="disp-bn" style="color:var(--green);">−</b></div>
+    </div>
+    <div class="summary-cell">
+      <div class="summary-cell-label">年間手取り合計</div>
+      <div class="summary-cell-main" id="disp-ny" style="color:var(--blue);">−</div>
+      <div class="summary-cell-sub">月換算 <b id="disp-nm" style="color:var(--green);">−</b></div>
+    </div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="stat-label">年間 手取り</div><div class="stat-num" id="s-net" style="color:var(--blue);">−</div></div>
+    <div class="stat"><div class="stat-label">税金 合計</div><div class="stat-num" id="s-tax" style="color:var(--red);">−</div></div>
+    <div class="stat"><div class="stat-label">社会保険 合計</div><div class="stat-num" id="s-soc" style="color:var(--amber);">−</div></div>
+    <div class="stat"><div class="stat-label">実質 控除率</div><div class="stat-num" id="s-rate" style="color:var(--orange);">−</div></div>
+  </div>
+
+  <div class="card">
+    <div class="legend" id="legend"></div>
+    <div class="chart-lbl">給与分（月給 × 12ヶ月）</div>
+    <div style="position:relative;width:100%;height:130px;"><canvas id="chart-base"></canvas></div>
+    <div class="chart-lbl" id="bonus-chart-lbl" style="margin-top:10px;">ボーナス分</div>
+    <div style="position:relative;width:100%;height:70px;" id="bonus-wrap"><canvas id="chart-bonus"></canvas></div>
+  </div>
+
+  <div class="sec">控除項目の内訳（月額・年額・年収比）</div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table><thead><tr><th>項目</th><th>月額（給与）</th><th>年額合計</th><th>年収比</th></tr></thead>
+    <tbody id="bd-body"></tbody></table>
+  </div>
+
+  <div class="sec">所得税の速算表 — 課税所得: <span id="taxable-lbl" style="color:var(--blue);font-family:'DM Mono',monospace;font-weight:700;margin-left:4px;">−</span></div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table><thead><tr><th>課税所得</th><th>税率</th><th>控除額</th><th>税額目安</th></tr></thead>
+    <tbody id="br-body"></tbody></table>
+  </div>
+
+  <footer>※ 給与所得者（会社員）を前提とした概算です。実際の税額は各種控除・会社の保険料率により異なります。</footer>
+</div>
+
+<script>
+const BRACKETS=[{label:'195万円以下',max:195,rate:.05,deduct:0},{label:'195〜330万円',max:330,rate:.10,deduct:97500},{label:'330〜695万円',max:695,rate:.20,deduct:427500},{label:'695〜900万円',max:900,rate:.23,deduct:636000},{label:'900〜1,800万円',max:1800,rate:.33,deduct:1536000},{label:'1,800〜4,000万円',max:4000,rate:.40,deduct:2796000},{label:'4,000万円超',max:Infinity,rate:.45,deduct:4796000}];
+const COLORS={net:'#1a5fa8',bonus_net:'#2d6e3e',income_tax:'#c13232',resident_tax:'#b54d1a',pension:'#8a5a0a',health:'#2d6e3e',care:'#888780',employment:'#5042b0'};
+function empDed(g){if(g<=1625000)return 550000;if(g<=1800000)return Math.floor(g*.4-100000);if(g<=3600000)return Math.floor(g*.3+80000);if(g<=6600000)return Math.floor(g*.2+440000);if(g<=8500000)return Math.floor(g*.1+1100000);return 1950000;}
+function calcIT(t){for(const b of BRACKETS){if(t<=b.max*10000)return Math.max(0,Math.floor(t*b.rate-b.deduct));}return Math.max(0,Math.floor(t*.45-4796000));}
+function man(v){return Math.round(v/10000).toLocaleString()+'万円';}
+function enMan(v){return(Math.round(v/10000*10)/10).toLocaleString()+'万円';}
+let cb,cb2;
+function calc(){
+  const total=parseInt(document.getElementById('sl').value)*10000;
+  const bp=Math.min(60,Math.max(0,parseFloat(document.getElementById('bonus-pct').value)||0))/100;
+  const bt=parseInt(document.getElementById('bonus-times').value);
+  const deps=parseInt(document.getElementById('deps').value);
+  const over40=document.getElementById('age').value==='o';
+  const bonus=Math.round(total*bp), mg=Math.round((total-bonus)/12), bo=bt>0?Math.round(bonus/bt):0;
+  document.getElementById('big-gross').textContent=Math.round(total/10000).toLocaleString();
+  document.getElementById('bonus-txt').textContent=`月給 ${man(mg)} × 12 = ${man(mg*12)}　／　賞与 ${man(bo)} × ${bt}回 = ${man(bonus)}`;
+  document.getElementById('bonus-chart-lbl').textContent=`ボーナス分（年${bt}回）`;
+  const bpct=(1-bp)*100;
+  document.getElementById('bonus-bar').innerHTML=`<div style="width:${bpct.toFixed(1)}%;background:#1a5fa8;transition:width .3s;"></div><div style="width:${(100-bpct).toFixed(1)}%;background:#c8840a;transition:width .3s;"></div>`;
+  const pension=Math.min(total*.0915,650000*.0915*12),health=Math.min(total*.0499,1390000*.0499),care=over40?Math.min(total*.00916,1390000*.00916):0,employment=total*.006,soc=pension+health+care+employment;
+  const ed=empDed(total),taxable=Math.max(0,total-ed-480000-deps*380000-soc),it=calcIT(taxable)*1.021,resBase=Math.max(0,total-ed-deps*380000-soc-330000),rt=resBase*.10+5000,td=it+rt+soc,net=total-td;
+  const mr=mg*12/total,br=bonus>0?bonus/total:0,mn=Math.round((mg*12-td*mr)/12),bno=bt>0?Math.round((bonus-td*br)/bt):0;
+  document.getElementById('disp-mg').textContent=man(mg);document.getElementById('disp-mn').textContent=man(mn);
+  document.getElementById('disp-bg').textContent=bonus>0?man(bo):'−';document.getElementById('disp-bn').textContent=bonus>0?man(bno):'−';
+  document.getElementById('disp-ny').textContent=man(net);document.getElementById('disp-nm').textContent=enMan(net/12);
+  document.getElementById('s-net').textContent=man(net);document.getElementById('s-tax').textContent=man(it+rt);document.getElementById('s-soc').textContent=man(soc);document.getElementById('s-rate').textContent=(td/total*100).toFixed(1)+'%';
+  document.getElementById('taxable-lbl').textContent=man(taxable);
+  const bItems=[{key:'net',label:'手取り（給与）',val:mg*12-td*mr},{key:'income_tax',label:'所得税',val:it*mr},{key:'resident_tax',label:'住民税',val:rt*mr},{key:'pension',label:'厚生年金',val:pension*mr},{key:'health',label:'健康保険',val:health*mr},{key:'care',label:'介護保険',val:care*mr},{key:'employment',label:'雇用保険',val:employment*mr}].filter(i=>i.val>.01);
+  const bnItems=bonus>0?[{key:'bonus_net',label:'ボーナス手取り',val:bonus-td*br},{key:'income_tax',label:'所得税（賞与）',val:it*br},{key:'resident_tax',label:'住民税（賞与）',val:rt*br},{key:'pension',label:'社会保険（賞与）',val:soc*br}].filter(i=>i.val>.01):[];
+  document.getElementById('legend').innerHTML=[...new Map([...bItems,...bnItems].map(i=>[i.key,i])).values()].map(i=>`<span class="legend-item"><span class="legend-dot" style="background:${COLORS[i.key]};"></span>${i.label.replace('（給与）','').replace('（賞与）','')}</span>`).join('');
+  const dItems=[{key:'income_tax',label:'所得税',val:it},{key:'resident_tax',label:'住民税',val:rt},{key:'pension',label:'厚生年金',val:pension},{key:'health',label:'健康保険',val:health},{key:'care',label:'介護保険',val:care},{key:'employment',label:'雇用保険',val:employment}].filter(i=>i.val>0);
+  document.getElementById('bd-body').innerHTML=dItems.map(i=>`<tr><td><div class="dot-cell"><span class="color-dot" style="background:${COLORS[i.key]};"></span>${i.label}</div></td><td>${Math.round(i.val*mr/12).toLocaleString()}円</td><td>${Math.round(i.val).toLocaleString()}円</td><td>${(i.val/total*100).toFixed(1)}%</td></tr>`).join('')+`<tr class="total-row"><td><div class="dot-cell" style="padding-left:15px;">合計控除</div></td><td>${Math.round(td*mr/12).toLocaleString()}円</td><td>${Math.round(td).toLocaleString()}円</td><td>${(td/total*100).toFixed(1)}%</td></tr>`;
+  const txm=taxable/10000;
+  document.getElementById('br-body').innerHTML=BRACKETS.map((b,i)=>{const act=txm<=b.max&&(i===0||txm>BRACKETS[i-1].max);return`<tr class="${act?'active-bracket':''}"><td>${b.label}${act?' ◀ あなた':''}</td><td style="text-align:right;font-family:'DM Mono',monospace;">${(b.rate*100).toFixed(0)}%</td><td style="text-align:right;font-family:'DM Mono',monospace;">${b.deduct===0?'−':b.deduct.toLocaleString()+'円'}</td><td style="text-align:right;font-family:'DM Mono',monospace;">${act?Math.round(calcIT(taxable)*1.021).toLocaleString()+'円':'−'}</td></tr>`;}).join('');
+  const cp={id:'cp',afterDraw(ch){const ctx=ch.ctx;ch.data.datasets.forEach((ds,di)=>{const m=ch.getDatasetMeta(di);if(!m.data[0])return;const px=m.data[0],sw=Math.abs(ch.scales.x.getPixelForValue(ds.data[0])-ch.scales.x.getPixelForValue(0));if(sw<40)return;ctx.save();ctx.font='500 11px "DM Mono",monospace';ctx.fillStyle='rgba(255,255,255,.9)';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText((ds.data[0]/total*100).toFixed(0)+'%',px.x-sw/2,px.y);ctx.restore();});}};
+  if(cb)cb.destroy();cb=new Chart(document.getElementById('chart-base'),{type:'bar',plugins:[cp],data:{labels:['給与'],datasets:bItems.map(i=>({label:i.label,data:[Math.round(i.val)],backgroundColor:COLORS[i.key],borderWidth:0}))},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.dataset.label+': '+Math.round(ctx.parsed.x).toLocaleString()+'円 ('+(ctx.parsed.x/total*100).toFixed(1)+'%)'}}},scales:{x:{stacked:true,max:total,ticks:{callback:v=>Math.round(v/10000).toLocaleString()+'万',font:{size:11}},grid:{color:'rgba(0,0,0,0.04)'}},y:{stacked:true,ticks:{font:{size:12}},grid:{display:false}}},layout:{padding:{top:4,bottom:4}}}});cb._ref=total;
+  if(cb2)cb2.destroy();
+  if(bonus>0){document.getElementById('bonus-wrap').style.display='block';document.getElementById('bonus-chart-lbl').style.display='block';cb2=new Chart(document.getElementById('chart-bonus'),{type:'bar',plugins:[cp],data:{labels:['賞与'],datasets:bnItems.map(i=>({label:i.label,data:[Math.round(i.val)],backgroundColor:COLORS[i.key],borderWidth:0}))},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.dataset.label+': '+Math.round(ctx.parsed.x).toLocaleString()+'円'}}},scales:{x:{stacked:true,max:total,ticks:{callback:v=>Math.round(v/10000).toLocaleString()+'万',font:{size:11}},grid:{color:'rgba(0,0,0,0.04)'}},y:{stacked:true,ticks:{font:{size:12}},grid:{display:false}}},layout:{padding:{top:4,bottom:4}}}});cb2._ref=total;}
+  else{document.getElementById('bonus-wrap').style.display='none';document.getElementById('bonus-chart-lbl').style.display='none';}
+}
+['sl','bonus-pct','bonus-times','deps','age'].forEach(id=>{document.getElementById(id).addEventListener(document.getElementById(id).tagName==='SELECT'?'change':'input',calc);});
+calc();
+</script>
+</body>
+</html>

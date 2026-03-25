@@ -3,35 +3,34 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>目標金額 達成シミュレーター</title>
+<title>計算機ポータル — hsummer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #f4f2ee;
+  --bg: #f2f0eb;
   --surface: #ffffff;
-  --surface2: #edeae4;
-  --border: rgba(0,0,0,0.08);
-  --border-med: rgba(0,0,0,0.13);
-  --text: #1c1a17;
-  --text-muted: #6a6760;
-  --text-faint: #9b9891;
+  --surface2: #eae7e1;
+  --border: rgba(0,0,0,0.07);
+  --border-med: rgba(0,0,0,0.12);
+  --text: #1a1816;
+  --text-muted: #68655f;
+  --text-faint: #9e9b96;
   --blue: #1a5fa8;
   --blue-50: #e8f0fb;
-  --blue-dark: #0c447c;
   --green: #2a6b3a;
   --green-50: #e4f2e8;
-  --teal: #1d9e75;
   --amber: #8a5a0a;
-  --red: #c03030;
-  --red-50: #fdeaea;
+  --amber-50: #fdf3e0;
   --purple: #4f42b0;
-  --radius: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 22px;
+  --purple-50: #eeedfe;
+  --coral: #993c1d;
+  --coral-50: #faece7;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
 }
 
 body {
@@ -42,519 +41,332 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Header */
 header {
   background: var(--text);
-  padding: 0 32px;
-  height: 56px;
+  padding: 0 40px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
-header h1 {
-  font-size: 15px;
-  font-weight: 500;
-  color: #fff;
-  letter-spacing: 0.03em;
-}
-header span {
-  font-size: 11px;
-  color: rgba(255,255,255,0.35);
+.logo {
   font-family: 'DM Mono', monospace;
+  font-size: 16px;
+  color: #fff;
+  letter-spacing: 0.04em;
 }
-
-.container {
-  max-width: 820px;
-  margin: 0 auto;
-  padding: 32px 20px 80px;
+.logo span { color: rgba(255,255,255,0.35); }
+header nav { display: flex; gap: 24px; }
+header nav a {
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+  text-decoration: none;
+  letter-spacing: 0.06em;
+  transition: color 0.15s;
 }
+header nav a:hover { color: rgba(255,255,255,0.85); }
 
-/* Goal selector */
-.goal-card {
-  background: var(--surface);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--border);
-  padding: 28px;
+/* Hero */
+.hero {
+  background: var(--text);
+  padding: 64px 40px 72px;
+  text-align: center;
+}
+.hero-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  font-family: 'DM Mono', monospace;
   margin-bottom: 20px;
 }
-.goal-title {
+.hero h2 {
+  font-size: 40px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.15;
+  margin-bottom: 14px;
+}
+.hero p {
+  font-size: 15px;
+  color: rgba(255,255,255,0.45);
+  line-height: 1.8;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+/* Container */
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+/* Section */
+.section-label {
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-faint);
-  margin-bottom: 16px;
-}
-.goal-btns {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-}
-.goal-btn {
-  padding: 8px 16px;
-  border-radius: 999px;
-  border: 1px solid var(--border-med);
-  background: var(--surface2);
-  color: var(--text-muted);
-  font-size: 13px;
-  font-family: 'DM Mono', monospace;
-  cursor: pointer;
-  transition: all 0.15s;
-  font-weight: 400;
-}
-.goal-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-50); }
-.goal-btn.active {
-  background: var(--text);
-  color: #fff;
-  border-color: var(--text);
-  font-weight: 500;
-}
-.goal-custom {
+  margin-bottom: 18px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 4px;
+  gap: 12px;
 }
-.goal-custom label { font-size: 13px; color: var(--text-muted); }
-.goal-custom input {
-  height: 36px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border-med);
-  background: var(--surface2);
-  color: var(--text);
-  padding: 0 12px;
-  font-size: 13px;
-  font-family: 'DM Mono', monospace;
-  width: 150px;
-  outline: none;
-  transition: border-color 0.15s;
-}
-.goal-custom input:focus { border-color: var(--blue); background: var(--surface); }
-.goal-display {
-  font-size: 13px;
-  color: var(--blue);
-  font-weight: 500;
-  margin-top: 10px;
-  font-family: 'DM Mono', monospace;
-}
-
-/* Sliders */
-.sliders-card {
-  background: var(--surface);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--border);
-  padding: 24px 28px;
-  margin-bottom: 20px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px 32px;
-}
-.sl-row { display: flex; flex-direction: column; gap: 6px; }
-.sl-label { font-size: 12px; color: var(--text-muted); }
-.sl-val { font-size: 15px; font-weight: 500; color: var(--text); font-family: 'DM Mono', monospace; }
-
-input[type="range"] {
-  -webkit-appearance: none;
-  width: 100%;
-  height: 3px;
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
   background: var(--border-med);
-  border-radius: 2px;
-  outline: none;
-  cursor: pointer;
-}
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  background: var(--text);
-  border: 3px solid #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
-  cursor: pointer;
 }
 
-/* Hero result */
-.hero {
-  background: var(--text);
-  border-radius: var(--radius-xl);
-  padding: 32px;
-  margin-bottom: 20px;
-  text-align: center;
-  color: #fff;
-}
-.hero-label { font-size: 12px; color: rgba(255,255,255,0.45); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
-.hero-years { font-size: 64px; font-weight: 700; font-family: 'DM Mono', monospace; line-height: 1; color: #fff; }
-.hero-unit { font-size: 20px; font-weight: 400; color: rgba(255,255,255,0.6); margin-left: 4px; }
-.hero-sub { font-size: 13px; color: rgba(255,255,255,0.45); margin-top: 10px; }
-.hero.impossible { background: var(--red-50); }
-.hero.impossible .hero-years { font-size: 20px; color: var(--red); }
-.hero.impossible .hero-sub { color: var(--red); opacity: 0.7; }
-
-/* Stats */
-.stat-grid {
+/* Cards grid */
+.cards {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0,1fr));
-  gap: 10px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 48px;
 }
-.stat {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 14px 16px;
-}
-.stat-label { font-size: 11px; color: var(--text-faint); margin-bottom: 5px; }
-.stat-num { font-size: 16px; font-weight: 500; font-family: 'DM Mono', monospace; }
 
-/* Chart card */
-.chart-card {
+.card {
   background: var(--surface);
   border-radius: var(--radius-xl);
   border: 1px solid var(--border);
-  padding: 24px 28px;
-  margin-bottom: 20px;
-}
-.legend {
+  padding: 28px;
+  text-decoration: none;
+  color: inherit;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 14px;
-  margin-bottom: 14px;
-  font-size: 12px;
+  transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+  position: relative;
+  overflow: hidden;
+}
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+  border-color: var(--border-med);
+}
+.card.coming-soon {
+  opacity: 0.55;
+  cursor: default;
+  pointer-events: none;
+}
+
+.card-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.card-body { flex: 1; }
+.card-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  margin-bottom: 8px;
+}
+.card h3 {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+.card p {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+.card-arrow {
+  font-size: 18px;
+  color: var(--text-faint);
+  align-self: flex-end;
+  transition: transform 0.15s, color 0.15s;
+}
+.card:hover .card-arrow {
+  transform: translateX(4px);
+  color: var(--text);
+}
+.card-badge {
+  position: absolute;
+  top: 16px; right: 16px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface2);
+  color: var(--text-faint);
+}
+.card-badge.new-badge {
+  background: #e4f2e8;
+  color: #2a6b3a;
+}
+
+/* Color themes */
+.theme-blue .card-icon { background: var(--blue-50); }
+.theme-blue .card-tag { background: var(--blue-50); color: var(--blue); }
+.theme-green .card-icon { background: var(--green-50); }
+.theme-green .card-tag { background: var(--green-50); color: var(--green); }
+.theme-amber .card-icon { background: var(--amber-50); }
+.theme-amber .card-tag { background: var(--amber-50); color: var(--amber); }
+.theme-purple .card-icon { background: var(--purple-50); }
+.theme-purple .card-tag { background: var(--purple-50); color: var(--purple); }
+.theme-coral .card-icon { background: var(--coral-50); }
+.theme-coral .card-tag { background: var(--coral-50); color: var(--coral); }
+
+/* Footer */
+footer {
+  border-top: 1px solid var(--border-med);
+  padding: 32px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+footer .f-logo {
+  font-family: 'DM Mono', monospace;
+  font-size: 14px;
   color: var(--text-muted);
 }
-.legend-item { display: flex; align-items: center; gap: 5px; }
-.legend-dot { width: 10px; height: 10px; border-radius: 2px; }
-.legend-line { width: 16px; height: 2px; border-top: 2px dashed #D85A30; }
-
-/* Table card */
-.table-card {
-  background: var(--surface);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--border);
-  overflow: hidden;
-  margin-bottom: 20px;
-}
-.table-header {
-  padding: 16px 20px 12px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-faint);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  border-bottom: 1px solid var(--border);
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-thead th {
-  background: var(--surface2);
-  padding: 8px 16px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-faint);
-  text-align: left;
-  border-bottom: 1px solid var(--border);
-}
-thead th:not(:first-child) { text-align: right; }
-tbody td {
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--border);
-  color: var(--text);
-}
-tbody td:not(:first-child) { text-align: right; font-family: 'DM Mono', monospace; font-size: 12px; }
-tbody tr:last-child td { border-bottom: none; }
-tbody tr.achieve-row td { background: var(--blue-50); color: var(--blue-dark); font-weight: 500; }
-
-footer {
-  text-align: center;
+footer p {
   font-size: 11px;
   color: var(--text-faint);
-  line-height: 1.8;
-  padding: 0 20px;
 }
 
-@media (max-width: 600px) {
-  header { padding: 0 16px; }
-  .container { padding: 20px 12px 60px; }
-  .goal-card, .chart-card { padding: 20px 16px; }
-  .sliders-card { grid-template-columns: 1fr; padding: 20px 16px; }
-  .stat-grid { grid-template-columns: repeat(2, 1fr); }
-  .hero-years { font-size: 48px; }
-  header span { display: none; }
+@media (max-width: 640px) {
+  header { padding: 0 20px; }
+  header nav { display: none; }
+  .hero { padding: 48px 20px 56px; }
+  .hero h2 { font-size: 28px; }
+  .container { padding: 32px 16px 60px; }
+  footer { padding: 24px 20px; }
 }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>目標金額 達成シミュレーター</h1>
-  <span>Japan · 複利計算ベース</span>
+  <div class="logo">hsummer<span>.calc</span></div>
+  <nav>
+    <a href="#">計算機一覧</a>
+    <a href="#">について</a>
+  </nav>
 </header>
+
+<div class="hero">
+  <div class="hero-eyebrow">Financial Calculators</div>
+  <h2>お金を、もっと<br>見える化する。</h2>
+  <p>年収・資産・投資のシミュレーターを<br>シンプルに使えるツール集です。</p>
+</div>
 
 <div class="container">
 
-  <!-- Goal -->
-  <div class="goal-card">
-    <div class="goal-title">目標金額を設定</div>
-    <div class="goal-btns">
-      <button class="goal-btn" onclick="setGoal(5000000)">500万</button>
-      <button class="goal-btn" onclick="setGoal(10000000)">1,000万</button>
-      <button class="goal-btn" onclick="setGoal(30000000)">3,000万</button>
-      <button class="goal-btn" onclick="setGoal(50000000)">5,000万</button>
-      <button class="goal-btn active" onclick="setGoal(100000000)">1億円</button>
-      <button class="goal-btn" onclick="setGoal(300000000)">3億円</button>
-    </div>
-    <div class="goal-custom">
-      <label>カスタム入力：</label>
-      <input type="number" id="goal-inp" value="100000000" step="1000000" />
-      <span style="font-size:13px;color:var(--text-muted);">円</span>
-    </div>
-    <div class="goal-display" id="goal-disp">目標 ▸ 1億円</div>
-  </div>
+  <div class="section-label">公開中のツール</div>
 
-  <!-- Sliders -->
-  <div class="sliders-card">
-    <div class="sl-row">
-      <div class="sl-label">年収（手取りベース）</div>
-      <input type="range" min="200" max="3000" step="10" value="800" id="income" />
-      <div class="sl-val" id="income-out">800万円</div>
-    </div>
-    <div class="sl-row">
-      <div class="sl-label">年間支出</div>
-      <input type="range" min="100" max="2000" step="10" value="400" id="expense" />
-      <div class="sl-val" id="expense-out">400万円</div>
-    </div>
-    <div class="sl-row">
-      <div class="sl-label">投資利回り（年率）</div>
-      <input type="range" min="0" max="15" step="0.5" value="5" id="rate" />
-      <div class="sl-val" id="rate-out">5.0%</div>
-    </div>
-    <div class="sl-row">
-      <div class="sl-label">現在の貯蓄額</div>
-      <input type="range" min="0" max="50000000" step="500000" value="0" id="current" />
-      <div class="sl-val" id="current-out">0万円</div>
-    </div>
-  </div>
+  <div class="cards">
 
-  <!-- Hero -->
-  <div class="hero" id="hero">
-    <div class="hero-label">目標達成まで</div>
-    <div>
-      <span class="hero-years" id="hero-years">−</span>
-      <span class="hero-unit" id="hero-unit">年</span>
-    </div>
-    <div class="hero-sub" id="hero-sub">−</div>
-  </div>
+    <!-- 年収シミュレーター -->
+    <a href="salary.html" class="card theme-blue">
+      <span class="card-badge new-badge">NEW</span>
+      <div class="card-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a5fa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">年収</div>
+        <h3>年収・手取り<br>シミュレーター</h3>
+        <p>年収から所得税・住民税・社会保険料を計算。ボーナス設定にも対応。</p>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
 
-  <!-- Stats -->
-  <div class="stat-grid">
-    <div class="stat">
-      <div class="stat-label">年間貯蓄額</div>
-      <div class="stat-num" id="s-save" style="color:var(--green);">−</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">貯蓄率</div>
-      <div class="stat-num" id="s-saverate" style="color:var(--blue);">−</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">運用による増加</div>
-      <div class="stat-num" id="s-gain" style="color:var(--amber);">−</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">達成時の総資産</div>
-      <div class="stat-num" id="s-final" style="color:var(--purple);">−</div>
-    </div>
-  </div>
+    <!-- 目標達成計算機 -->
+    <a href="goal-calculator.html" class="card theme-green">
+      <span class="card-badge new-badge">NEW</span>
+      <div class="card-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2a6b3a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">目標設定</div>
+        <h3>目標金額<br>達成シミュレーター</h3>
+        <p>1億円を貯めるには何年かかる？年収・支出・利回りから達成年数を計算。</p>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
 
-  <!-- Chart -->
-  <div class="chart-card">
-    <div class="legend">
-      <span class="legend-item"><span class="legend-dot" style="background:#1a5fa8;"></span>元本累計</span>
-      <span class="legend-item"><span class="legend-dot" style="background:#5DCAA5;"></span>運用益</span>
-      <span class="legend-item"><span class="legend-line"></span>目標ライン</span>
+    <!-- 複利計算機（Coming Soon） -->
+    <div class="card coming-soon theme-amber">
+      <span class="card-badge">近日公開</span>
+      <div class="card-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8a5a0a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">投資</div>
+        <h3>複利シミュレーター</h3>
+        <p>積立投資の長期効果を可視化。単利との比較で複利の力を実感。</p>
+      </div>
+      <div class="card-arrow">→</div>
     </div>
-    <div style="position:relative;width:100%;height:300px;">
-      <canvas id="chart"></canvas>
-    </div>
-  </div>
 
-  <!-- Milestone table -->
-  <div class="table-card">
-    <div class="table-header">節目ごとの資産推移</div>
-    <div style="overflow-x:auto;">
-      <table>
-        <thead>
-          <tr>
-            <th>経過年数</th>
-            <th>元本累計</th>
-            <th>運用益</th>
-            <th>総資産</th>
-            <th>達成率</th>
-          </tr>
-        </thead>
-        <tbody id="milestone-body"></tbody>
-      </table>
+    <!-- ローン計算機（Coming Soon） -->
+    <div class="card coming-soon theme-purple">
+      <span class="card-badge">近日公開</span>
+      <div class="card-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4f42b0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">住宅</div>
+        <h3>住宅ローン<br>返済シミュレーター</h3>
+        <p>借入額・金利・返済期間から月々の返済額と総支払額を計算。</p>
+      </div>
+      <div class="card-arrow">→</div>
     </div>
-  </div>
 
-  <footer>
-    ※ 本シミュレーターは参考値です。実際の運用成績・税金・インフレは考慮していません。<br>
-    投資にはリスクが伴います。投資判断はご自身の責任で行ってください。
-  </footer>
+    <!-- 老後資金（Coming Soon） -->
+    <div class="card coming-soon theme-coral">
+      <span class="card-badge">近日公開</span>
+      <div class="card-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#993c1d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">老後</div>
+        <h3>老後資金<br>シミュレーター</h3>
+        <p>退職後に必要な資金を計算。年金・貯蓄・生活費から不足額を把握。</p>
+      </div>
+      <div class="card-arrow">→</div>
+    </div>
+
+    <!-- FIRE計算機（Coming Soon） -->
+    <div class="card coming-soon theme-blue">
+      <span class="card-badge">近日公開</span>
+      <div class="card-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a5fa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      </div>
+      <div class="card-body">
+        <div class="card-tag">FIRE</div>
+        <h3>FIRE達成<br>シミュレーター</h3>
+        <p>経済的自立・早期退職に必要な資産額と達成年数を計算。4%ルール対応。</p>
+      </div>
+      <div class="card-arrow">→</div>
+    </div>
+
+  </div>
 
 </div>
 
-<script>
-let goalAmount = 100000000;
-let chart;
+<footer>
+  <div class="f-logo">hsummer<span style="color:var(--text-faint);">.calc</span></div>
+  <p>※ 本サイトの計算結果は参考値です。投資・税務の判断はご自身の責任で行ってください。</p>
+</footer>
 
-const GOAL_VALS = [5000000,10000000,30000000,50000000,100000000,300000000];
-
-function setGoal(v) {
-  goalAmount = v;
-  document.getElementById('goal-inp').value = v;
-  document.querySelectorAll('.goal-btn').forEach((btn, i) => {
-    btn.classList.toggle('active', GOAL_VALS[i] === v);
-  });
-  calc();
-}
-
-function fmt(v) {
-  const m = Math.round(v / 10000);
-  if (m >= 10000) return (m / 10000).toFixed(1) + '億円';
-  return m.toLocaleString() + '万円';
-}
-
-function calc() {
-  const income  = parseInt(document.getElementById('income').value) * 10000;
-  const expense = parseInt(document.getElementById('expense').value) * 10000;
-  const rate    = parseFloat(document.getElementById('rate').value) / 100;
-  const current = parseInt(document.getElementById('current').value);
-  const goal    = parseInt(document.getElementById('goal-inp').value) || goalAmount;
-
-  document.getElementById('income-out').textContent  = Math.round(income/10000).toLocaleString()  + '万円';
-  document.getElementById('expense-out').textContent = Math.round(expense/10000).toLocaleString() + '万円';
-  document.getElementById('rate-out').textContent    = parseFloat((rate*100).toFixed(1)) + '%';
-  document.getElementById('current-out').textContent = Math.round(current/10000).toLocaleString() + '万円';
-
-  const gm = Math.round(goal/10000);
-  document.getElementById('goal-disp').textContent = '目標 ▸ ' + (gm >= 10000 ? (gm/10000).toFixed(1) + '億円' : gm.toLocaleString() + '万円');
-
-  const annualSave = income - expense;
-  const hero = document.getElementById('hero');
-
-  if (annualSave <= 0 && current < goal) {
-    hero.className = 'hero impossible';
-    document.getElementById('hero-years').textContent = '達成不可';
-    document.getElementById('hero-unit').textContent = '';
-    document.getElementById('hero-sub').textContent = '支出が収入を上回っています。支出を減らすか収入を増やしてください。';
-    document.getElementById('s-save').textContent = fmt(annualSave);
-    document.getElementById('s-saverate').textContent = '−';
-    document.getElementById('s-gain').textContent = '−';
-    document.getElementById('s-final').textContent = '−';
-    document.getElementById('milestone-body').innerHTML = '';
-    if (chart) { chart.destroy(); chart = null; }
-    return;
-  }
-
-  hero.className = 'hero';
-  document.getElementById('hero-unit').textContent = '年';
-
-  const saveRate = income > 0 ? (annualSave / income * 100) : 0;
-  document.getElementById('s-save').textContent     = fmt(annualSave);
-  document.getElementById('s-saverate').textContent = saveRate.toFixed(1) + '%';
-
-  const MAX = 60;
-  const labels = [], principalData = [], gainData = [];
-  let balance = current, achieveYear = null;
-
-  for (let y = 0; y <= MAX; y++) {
-    labels.push(y + '年');
-    const principal = Math.round(current + annualSave * y);
-    principalData.push(principal);
-    gainData.push(Math.max(0, Math.round(balance - principal)));
-    if (achieveYear === null && balance >= goal) achieveYear = y;
-    balance = balance * (1 + rate) + annualSave;
-  }
-
-  if (achieveYear === null) {
-    document.getElementById('hero-years').textContent = '60年超';
-    document.getElementById('hero-sub').textContent = '利回りまたは貯蓄額を増やすことをお勧めします';
-  } else {
-    document.getElementById('hero-years').textContent = achieveYear;
-    const yr = new Date().getFullYear() + achieveYear;
-    document.getElementById('hero-sub').textContent = yr + '年に達成 ／ 現在から' + achieveYear + '年後';
-  }
-
-  const lastIdx = principalData.length - 1;
-  const finalTotal = principalData[lastIdx] + gainData[lastIdx];
-  document.getElementById('s-gain').textContent  = fmt(Math.max(0, gainData[lastIdx]));
-  document.getElementById('s-final').textContent = fmt(finalTotal);
-
-  const milestones = [1,3,5,10,15,20,25,30,40];
-  if (achieveYear !== null && !milestones.includes(achieveYear)) {
-    milestones.push(achieveYear); milestones.sort((a,b)=>a-b);
-  }
-  document.getElementById('milestone-body').innerHTML = milestones.filter(y=>y<=MAX).map(y=>{
-    let bal = current;
-    for (let i=0;i<y;i++) bal = bal*(1+rate)+annualSave;
-    bal = Math.round(bal);
-    const p    = Math.round(current + annualSave * y);
-    const gain = Math.max(0, bal - p);
-    const pct  = Math.min(100, bal/goal*100).toFixed(1);
-    const done = y === achieveYear;
-    return `<tr class="${done?'achieve-row':''}">
-      <td>${y}年${done?' ★ 達成':''}</td>
-      <td>${fmt(p)}</td>
-      <td style="color:var(--amber);">${fmt(gain)}</td>
-      <td>${fmt(bal)}</td>
-      <td style="color:${parseFloat(pct)>=100?'var(--green)':'var(--text-muted)'};">${pct}%</td>
-    </tr>`;
-  }).join('');
-
-  const show = Math.min(achieveYear !== null ? achieveYear + 6 : 35, MAX);
-  const gl = labels.slice(0, show+1);
-  const gp = principalData.slice(0, show+1);
-  const gg = gainData.slice(0, show+1);
-
-  if (chart) chart.destroy();
-  chart = new Chart(document.getElementById('chart'), {
-    type: 'bar',
-    data: {
-      labels: gl,
-      datasets: [
-        { label:'元本累計', data: gp, backgroundColor:'#1a5fa8', borderWidth:0, stack:'a' },
-        { label:'運用益',   data: gg, backgroundColor:'#5DCAA5', borderWidth:0, stack:'a' },
-        { label:'目標', data: Array(gl.length).fill(goal), type:'line',
-          borderColor:'#D85A30', borderDash:[5,4], borderWidth:2,
-          pointRadius:0, fill:false, stack:undefined }
-      ]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: {
-        legend: { display:false },
-        tooltip: { callbacks: { label: ctx => ' ' + ctx.dataset.label + ': ' + fmt(ctx.parsed.y) } }
-      },
-      scales: {
-        x: { stacked:true, ticks:{ autoSkip:true, maxTicksLimit:10, font:{size:11} }, grid:{ display:false } },
-        y: { stacked:true, ticks:{ callback: v => fmt(v), font:{size:11} }, grid:{ color:'rgba(0,0,0,0.05)' } }
-      }
-    }
-  });
-}
-
-document.getElementById('goal-inp').addEventListener('input', function() {
-  goalAmount = parseInt(this.value)||0;
-  document.querySelectorAll('.goal-btn').forEach(b=>b.classList.remove('active'));
-  calc();
-});
-['income','expense','rate','current'].forEach(id=>{
-  document.getElementById(id).addEventListener('input', calc);
-});
-
-calc();
-</script>
 </body>
 </html>
